@@ -20,7 +20,8 @@ def recipe_image_file_path(instance, filename):
     ext = os.path.splitext(filename)[1]
     filename = f'{uuid.uuid4()}{ext}'
 
-    return os.path.join('uploads','recipe',filename)
+    return os.path.join('uploads', 'recipe', filename)
+
 
 class UserManager(BaseUserManager):
     """Manager for users"""
@@ -54,15 +55,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     headline = models.CharField(max_length=255, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)  # Set only on creation
-    updated_at = models.DateTimeField( default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()
     USERNAME_FIELD = "email"
 
+
 class Recipe(models.Model):
     """Recipe Object."""
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     time_minutes = models.IntegerField()
@@ -71,35 +74,33 @@ class Recipe(models.Model):
     tag = models.ManyToManyField('Tag')
     ingredient = models.ManyToManyField('Ingredients')
     image = models.ImageField(null=True, upload_to=recipe_image_file_path)
-    created_at = models.DateTimeField( default=timezone.now)  # Set only on creation
-    updated_at = models.DateTimeField( default=timezone.now)
-    recipe_procedure = models.JSONField(null=True, blank=True, default=list) # json of format
-    # {
-    #   step:1,
-    #   text: 'Description about what is to be done in each step',
-    #   timer:'time needed to execute the step',
-    #   title : 'title for each step'
-    # }
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    recipe_procedure = models.JSONField(null=True, blank=True, default=list)
 
     def __str__(self):
         return self.title
 
+
 class Tag(models.Model):
     """Tag Object. (for filtering recipes)"""
     name = models.CharField(max_length=255)
-    created_at = models.DateTimeField( default=timezone.now)  # Set only on creation
-    updated_at = models.DateTimeField( default=timezone.now)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
 
+
 class Ingredients(models.Model):
     """Ingredients Object."""
     name = models.CharField(max_length=255)
-    created_at = models.DateTimeField( default=timezone.now)  # Set only on creation
-    updated_at = models.DateTimeField( default=timezone.now)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name

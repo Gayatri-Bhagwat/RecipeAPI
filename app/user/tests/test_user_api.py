@@ -12,6 +12,7 @@ CREATE_USER_URL = reverse("user:create")
 TOKEN_URL = reverse("user:login")
 UPDATE_USER_URL = reverse("user:update")
 
+
 def create_user(**params):
     """Create and return a new user"""
     return get_user_model().objects.create_user(**params)
@@ -22,7 +23,11 @@ class PublicUserAPITest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.payload = {'email':'test2@example.com','password':'testhost313!','name':'test_user2'}
+        self.payload = {
+            'email': 'test2@example.com',
+            'password': 'testhost313!',
+            'name': 'test_user2'
+        }
         self.user = create_user(**self.payload)
 
     def test_create_user_success(self):
@@ -69,25 +74,30 @@ class PublicUserAPITest(TestCase):
         value = self.client.post(TOKEN_URL, self.payload)
         print(value)
         self.assertEqual(value.status_code, status.HTTP_200_OK)
-        self.assertIsNotNone(json.loads(value.content.decode('utf-8'))['token'])
+        self.assertIsNotNone(
+            json.loads(value.content.decode('utf-8'))['token']
+        )
 
     def test_token_not_retrieved(self):
         """Test token retrival is not successful"""
         payload = {
-            'email' : 'testnotuser@gmail.com',
-            'password' : 'testnotuser313!',
-            'name' : 'not_registered_user'
+            'email': 'testnotuser@gmail.com',
+            'password': 'testnotuser313!',
+            'name': 'not_registered_user'
         }
         message = 'Unable to authenticate with provided credentials'
         res = self.client.post(TOKEN_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(json.loads(res.content.decode('utf-8'))['non_field_errors'][0],message)
+        self.assertEqual(json.loads(
+            res.content.decode('utf-8'))['non_field_errors'][0],
+            message
+        )
 
     def test_user_is_updated_successfully(self):
         """Test whether user is updated successfully"""
         data = {
-            'name':'testdemouser2',
-            'password':'testpassword313!',
+            'name': 'testdemouser2',
+            'password': 'testpassword313!',
         }
         self.client.force_authenticate(self.user)
         res = self.client.patch(UPDATE_USER_URL, data)
@@ -97,5 +107,8 @@ class PublicUserAPITest(TestCase):
     def test_post_endpoint_not_allowed_for_update_user(self):
         """Test post endpoint is not allowed to update user"""
         self.client.force_authenticate(self.user)
-        res = self.client.post(UPDATE_USER_URL,{'name':'abcd','password':'gettestuser231'})
+        res = self.client.post(UPDATE_USER_URL, {
+            'name': 'abcd',
+            'password': 'gettestuser231'
+        })
         self.assertEqual(res.status_code, HTTP_405_METHOD_NOT_ALLOWED)

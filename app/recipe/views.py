@@ -10,6 +10,7 @@ from core.models import Recipe, Tag, Ingredients
 from recipe.serializers import RecipeSerializer, TagSerializer, IngredientSerializer, \
     RecipeImageSerializer, RecipeDetailSerializer
 
+
 @extend_schema_view(
     list=extend_schema(
         description="List of all Tags/Ingredients based on the filter you applied.",
@@ -17,7 +18,8 @@ from recipe.serializers import RecipeSerializer, TagSerializer, IngredientSerial
             OpenApiParameter(
                 'assigned_only',
                 OpenApiTypes.BOOL,
-                description="Add 'True' if you want the tags/ingredients assigned to some specific recipe.\n"
+                description="Add 'True' if you want the tags/ingredients assigned "
+                            "to some specific recipe.\n"
             ),
             OpenApiParameter(
                 'search',
@@ -27,15 +29,19 @@ from recipe.serializers import RecipeSerializer, TagSerializer, IngredientSerial
         ]
     )
 )
-class BaseRecipeAttrViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, mixins.UpdateModelMixin
-    ,viewsets.GenericViewSet):
+class BaseRecipeAttrViewSet(
+    mixins.ListModelMixin, mixins.DestroyModelMixin,
+    mixins.UpdateModelMixin, viewsets.GenericViewSet
+):
     """Common view-set for tags and ingredients"""
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """Return filtered queryset for authenticated user."""
-        assigned_only = bool(self.request.query_params.get('assigned_only') == 'true')
+        assigned_only = bool(
+            self.request.query_params.get('assigned_only') == 'true'
+        )
         search = self.request.query_params.get('search')
         queryset = self.queryset
         if assigned_only:
@@ -49,6 +55,7 @@ class BaseRecipeAttrViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, mix
         if not search and not assigned_only:
             queryset = self.queryset
         return queryset.filter(user=self.request.user).order_by('-name').distinct()
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -72,8 +79,8 @@ class BaseRecipeAttrViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, mix
             OpenApiParameter(
                 'prep_time',
                 OpenApiTypes.STR,
-                description='Get the list of All recipes with preparation time less than or equal to given preperation '
-                            'time\n',
+                description='Get the list of All recipes with preparation '
+                            'time less than or equal to given preparation time\n',
             )
         ]
     ),
@@ -91,11 +98,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Return queryset for recipe view."""
-        tags = self.request.query_params.get('tag',None)
-        ingredients = self.request.query_params.get('ingredient',None)
+        tags = self.request.query_params.get('tag', None)
+        ingredients = self.request.query_params.get('ingredient', None)
         search = self.request.query_params.get("search", None)
         prep_time = self.request.query_params.get("prep_time", None)
-        queryset =  self.queryset
+        queryset = self.queryset
         tag_ids = []
         ingredient_ids = []
         if not tags and not ingredients:
@@ -106,7 +113,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             if ingredients:
                 ingredient_ids = self._params_to_ints(ingredients)
             if tags and ingredients:
-                queryset = queryset.filter(tag__id__in=tag_ids, ingredient__id__in=ingredient_ids)
+                queryset = queryset.filter(
+                    tag__id__in=tag_ids, ingredient__id__in=ingredient_ids
+                )
             elif tags:
                 queryset = queryset.filter(tag__id__in=tag_ids)
             else:
@@ -146,6 +155,7 @@ class TagViewSet(BaseRecipeAttrViewSet):
     """Views for Tag API"""
     serializer_class = TagSerializer
     queryset = Tag.objects.all()
+
 
 class IngredientViewSet(BaseRecipeAttrViewSet):
     """Views for Ingredient API"""
