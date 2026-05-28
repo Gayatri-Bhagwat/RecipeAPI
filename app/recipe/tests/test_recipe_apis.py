@@ -196,6 +196,8 @@ class TestRecipeAdminSection(TestCase):
         data = {
             'title': 'New recipe with detailed steps.',
             'time_minutes': 10,
+            'likes': 100,
+            'servings': 2,
             'price': 10,
             'description': 'Recipe with detailed steps..',
             'tag': [{'name': 'Spicy'}],
