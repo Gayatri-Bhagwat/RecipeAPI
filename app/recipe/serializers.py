@@ -44,8 +44,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ['id', 'title', 'time_minutes', 'price', 'link', 'likes', 'servings',
-                  'tag', 'ingredient', 'image', 'recipe_procedure']
+        fields = ['id', 'title', 'description', 'time_minutes', 'price', 'link', 'likes', 'servings',
+                  'tag', 'ingredient', 'image', 'recipe_procedure', 'created_at']
         read_only_fields = ['id']
 
     @staticmethod
@@ -101,11 +101,15 @@ class RecipeDetailSerializer(RecipeSerializer):
 
     def update(self, instance, validated_data):
         """Update a recipe to attach tag to recipe."""
-        tags = validated_data.pop('tags', None)
-        ingredients = validated_data.pop('ingredient', None)
+        tags = validated_data.pop('tag', [])
+        ingredients = validated_data.pop('ingredient', [])
         if tags is not None:
             instance.tag.clear()
-            self._get_or_create_tags(tags, ingredients, instance)
+
+        if ingredients is not None:
+            instance.ingredient.clear()
+
+        self._get_or_create_tags(tags, ingredients, instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

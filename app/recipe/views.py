@@ -2,6 +2,7 @@
 
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import viewsets, status, mixins
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -102,6 +103,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ingredients = self.request.query_params.get('ingredient', None)
         search = self.request.query_params.get("search", None)
         prep_time = self.request.query_params.get("prep_time", None)
+        sort_by = self.request.query_params.get("sort_by", None)
         queryset = self.queryset
         tag_ids = []
         ingredient_ids = []
@@ -123,8 +125,35 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(title__icontains=search)
         if prep_time:
-            queryset = queryset.filter(time_minutes__lte=prep_time)
-        return queryset.filter(user=self.request.user).order_by('-id').distinct()
+            queryset = self._filter_prep_time(prep_time, queryset)
+        if sort_by:
+            queryset = self._sort_queryset(sort_by, queryset)
+        return queryset.filter(user=self.request.user).distinct()
+
+    @staticmethod
+    def _sort_queryset(sort_by, queryset):
+        if sort_by == "asc":
+            queryset = queryset.order_by("created_at")
+        elif sort_by == "desc":
+            queryset = queryset.order_by("-created_at")
+        else:
+            raise ValidationError(
+                detail='sort_by must be "asc" or "desc"',
+                code='invalid_sort_parameter'
+            )
+        return queryset
+
+    @staticmethod
+    def _filter_prep_time(prep_time, queryset):
+        if prep_time == 'all':
+            return queryset
+        elif prep_time == "30":
+            return queryset.filter(time_minutes__lte=prep_time)
+        elif prep_time == "60":
+            return queryset.filter(time_minutes__gte=30, time_minutes__lte=60)
+        elif prep_time == "90":
+            return queryset.filter(time_minutes__gte=90)
+        return queryset
 
     def get_serializer_class(self):
         """Return  serializer class for recipe view."""

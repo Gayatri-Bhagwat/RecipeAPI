@@ -42,7 +42,7 @@ class TestRecipeFilters(TestCase):
         )
         self.recipe = Recipe.objects.create(
             title="testRecipe", description="Recipe with tags and ingredient.", time_minutes=7, price=60,
-            user=self.user, link="test.link-2", created_at=timezone.now(), updated_at=timezone.now()
+            user=self.user, link="test.link-2", created_at="2028-05-28 15:39:01.551 +0530", updated_at=timezone.now()
         )
         self.recipe.tag.add(self.tag)
         self.recipe.ingredient.add(self.ingredient)
@@ -54,9 +54,21 @@ class TestRecipeFilters(TestCase):
             name="TestOtherIngredient", user=self.other_user, created_at=timezone.now(), updated_at=timezone.now()
         )
         self.other_recipe = Recipe.objects.create(
-            title="testOtherRecipe", user=self.other_user, description="Recipe created with other tags and ingredients",
-            price=100, link="test other - link2", time_minutes=9, created_at=timezone.now(), updated_at=timezone.now()
+            title="testOtherRecipe", user=self.other_user,
+            description="Recipe created with other tags and ingredients",
+            price=100, link="test other - link2", time_minutes=66,
+            created_at="2028-05-28 15:39:01.551 +0530",
+            updated_at=timezone.now()
         )
+        self.second_recipe = Recipe.objects.create(
+            title="testSecondRecipe", user=self.other_user,
+            description="second Recipe created with other tags and ingredients",
+            price=200, link="test other - link2", time_minutes=34,
+            created_at="2026-05-28 15:39:01.551 +0530",
+            updated_at=timezone.now()
+        )
+        self.second_recipe.tag.add(self.other_tag)
+        self.second_recipe.ingredient.add(self.ingredient)
         self.other_recipe.tag.add(self.other_tag)
         self.other_recipe.ingredient.add(self.other_ingredient)
         self.ingredient_not_assignedTo_recipe = Ingredients.objects.create(
@@ -137,3 +149,25 @@ class TestRecipeFilters(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(self.recipe.title.__contains__(search), True)
+
+    def test_sort_filter_works_as_expected(self):
+        """Test whether correct recipe data is returned for the applied sort filter """
+        sort = "desc"
+        url = reverse("recipe:recipe-list", query={"sort": sort})
+        self.client.force_authenticate(self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result_json = response.json()
+        self.assertEqual(len(result_json), 2)
+        self.assertTrue(result_json[0]['created_at'] > result_json[1]['created_at'])
+
+    def test_prep_time_filter_works_as_expected(self):
+        """Test whether correct recipe data is returned for the prep-time filter"""
+        prep_time = "60"
+        url = reverse("recipe:recipe-list", query={"prep_time": prep_time})
+        self.client.force_authenticate(self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result_json = response.json()
+        self.assertEqual(len(result_json), 1)
+        self.assertEqual(result_json[0]['title'], self.second_recipe.title)

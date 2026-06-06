@@ -69,7 +69,7 @@ class Recipe(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     time_minutes = models.IntegerField()
-    price = models.DecimalField(decimal_places=2, max_digits=5)
+    price = models.DecimalField(blank=True, null=True, decimal_places=2, max_digits=5)
     likes = models.IntegerField(default=0)
     servings = models.IntegerField(default=2)
     link = models.CharField(max_length=255, blank=True)

@@ -3,3 +3,4 @@ djangorestframework
 psycopg2-binary
 drf-spectacular
 Pillow
+django-cors-headers
