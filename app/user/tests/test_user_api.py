@@ -75,7 +75,7 @@ class PublicUserAPITest(TestCase):
         print(value)
         self.assertEqual(value.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(
-            json.loads(value.content.decode('utf-8'))['token']
+            json.loads(value.content.decode('utf-8'))['access_token']
         )
 
     def test_token_not_retrieved(self):
@@ -85,13 +85,10 @@ class PublicUserAPITest(TestCase):
             'password': 'testnotuser313!',
             'name': 'not_registered_user'
         }
-        message = 'Unable to authenticate with provided credentials'
+        message = 'Invalid credentials.'
         res = self.client.post(TOKEN_URL, payload)
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(json.loads(
-            res.content.decode('utf-8'))['details'][0],
-            message
-        )
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(res.json()['error'], message)
 
     def test_user_is_updated_successfully(self):
         """Test whether user is updated successfully"""

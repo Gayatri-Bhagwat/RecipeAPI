@@ -110,3 +110,22 @@ class Ingredients(models.Model):
     class Meta:
         """To define the models exact name."""
         verbose_name_plural = "Ingredients"
+
+
+class RefreshToken(models.Model):
+    """Refresh Token Object."""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='refresh_token'
+    )
+    token = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_revoked = models.BooleanField(default=False)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def is_valid(self):
+        return not self.is_revoked and not self.is_expired()

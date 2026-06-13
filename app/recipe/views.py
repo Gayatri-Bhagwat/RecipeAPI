@@ -4,9 +4,10 @@ from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiPara
 from rest_framework import viewsets, status, mixins
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+import app.authentication
 from core.models import Recipe, Tag, Ingredients
 from recipe.serializers import RecipeSerializer, TagSerializer, IngredientSerializer, \
     RecipeImageSerializer, RecipeDetailSerializer
@@ -35,7 +36,7 @@ class BaseRecipeAttrViewSet(
     mixins.UpdateModelMixin, viewsets.GenericViewSet
 ):
     """Common view-set for tags and ingredients"""
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [app.authentication.CustomAuthenticate]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -90,10 +91,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """Views for recipe API's"""
     serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [app.authentication.CustomAuthenticate]
     permission_classes = [IsAuthenticated]
 
-    def _params_to_ints(self, qs):
+    @staticmethod
+    def _params_to_ints(qs):
         """Convert the list of string to integers"""
         return [int(str_id) for str_id in qs.split(',')]
 
@@ -182,11 +184,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class TagViewSet(BaseRecipeAttrViewSet):
     """Views for Tag API"""
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [app.authentication.CustomAuthenticate]
     serializer_class = TagSerializer
     queryset = Tag.objects.all()
 
 
 class IngredientViewSet(BaseRecipeAttrViewSet):
     """Views for Ingredient API"""
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [app.authentication.CustomAuthenticate]
     serializer_class = IngredientSerializer
     queryset = Ingredients.objects.all()

@@ -9,4 +9,5 @@ urlpatterns = [
     path("create/", views.CreateUserView.as_view(), name="create"),
     path("token/", views.TokenUserView.as_view(), name="login"),
     path("update/", views.ManageUserView.as_view(), name="update"),
+    path("refresh/", views.RefreshTokenView.as_view(), name="refresh"),
 ]
