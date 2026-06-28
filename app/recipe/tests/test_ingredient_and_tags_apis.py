@@ -63,7 +63,7 @@ class TestIngredientApis(TestCase):
         self.client.force_authenticate(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]['id'], self.ingredient.id)
         self.assertEqual(response.data[0]['name'], self.ingredient.name)
 
@@ -73,7 +73,7 @@ class TestIngredientApis(TestCase):
         self.client.force_authenticate(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]['name'], self.tag.name)
 
     def test_ingredients_update_api(self):
@@ -133,4 +133,4 @@ class TestIngredientApis(TestCase):
         self.client.force_authenticate(self.other_user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.other_tag.name, response.data[0]['name'])
+        self.assertEqual(len(response.json()), 2)

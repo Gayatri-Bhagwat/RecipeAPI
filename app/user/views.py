@@ -3,14 +3,15 @@ import os
 
 import django
 from django.contrib.auth import authenticate
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
+from rest_framework import generics, permissions
 from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import app.authentication
-from core.models import RefreshToken
+from core.models import RefreshToken, User
 from user.serializers import (
     UserSerializer,
     AuthTokenSerializer
@@ -38,7 +39,6 @@ class TokenUserView(ObtainAuthToken):
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
     def post(self, request, *args, **kwargs):
-
         email = request.data.get('email')
         password = request.data.get('password')
 
@@ -51,6 +51,8 @@ class TokenUserView(ObtainAuthToken):
         return Response({
             'access_token': access_token.key,  # ✅ DRF Token uses .key
             'refresh_token': refresh_token.token,
+            'user_name': user.name,
+            'headline': user.headline
         })
 
 
@@ -65,8 +67,29 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
+@extend_schema(
+    description="API endpoint to refresh expired token.",
+    request={
+        "application/json": {
+            'type': 'object',
+            'properties': {
+                'refresh_token': {'type': 'string', 'description': 'Refresh token.'},
+            },
+            'required': ['current_password', 'change_password'],
+        }
+    },
+    responses={
+        200: OpenApiResponse(description='Refresh token updated successfully.'),
+        401: {
+            OpenApiResponse(description='Refresh token expired or revoked.'),
+            OpenApiResponse(description='Invalid refresh token.'),
+        },
+        400: OpenApiResponse(description="Refresh token is required"),
+
+    }
+)
 class RefreshTokenView(APIView):
-    """View set for refreshing an access token"""
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @staticmethod
@@ -74,36 +97,62 @@ class RefreshTokenView(APIView):
         refresh_token_value = request.data.get('refresh_token')
 
         if not refresh_token_value:
-            return Response(
-                {'error': 'refresh_token is required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'refresh_token is required.'}, status=400)
 
         try:
-            refresh_token = RefreshToken.objects.select_related('user').get(
-                token=refresh_token_value
-            )
+            refresh_token = RefreshToken.objects.get(token=refresh_token_value)
         except RefreshToken.DoesNotExist:
-            return Response(
-                {'error': 'Invalid refresh token.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response({'error': 'Invalid refresh token.'}, status=401)
 
         if not refresh_token.is_valid():
-            return Response(
-                {'error': 'Refresh token expired or revoked. Please log in again.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        Token.objects.filter(user=refresh_token.user).delete()
+            return Response({'error': 'Refresh token expired or revoked.'}, status=401)
 
         new_access_token, new_refresh_token = generate_auth_token(refresh_token.user)
-
-        refresh_token.is_revoked = True
-        refresh_token.save()
 
         return Response({
             'access_token': new_access_token.key,
             'refresh_token': new_refresh_token.token,
-            'expires_in': '15 minutes',
-        }, status=status.HTTP_200_OK)
+        }, status=200)
+
+
+@extend_schema(
+    description="API endpoint to reset a user's password.",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'current_password': {'type': 'string', 'description': 'Current password.'},
+                'change_password': {'type': 'string', 'description': 'New password.'},
+            },
+            'required': ['current_password', 'change_password'],
+        }
+    },
+    responses={
+        200: OpenApiResponse(description='Password updated successfully.'),
+        400: OpenApiResponse(description='Current password is incorrect.'),
+        404: OpenApiResponse(description='No account found with this email.'),
+    }
+)
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        email = kwargs.get('email')
+        if not email:
+            return Response({'error': 'Email is required.'}, status=400)
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'error': 'No account found with this email.'}, status=404)
+        provided_current_password = self.request.data.get('current_password')
+        provided_password = self.request.data.get('change_password')
+        if not user.check_password(provided_current_password):
+            return Response({'error': 'Current password is incorrect.'}, status=400)
+
+        user.set_password(provided_password)
+        user.save(update_fields=['password'])
+
+        Token.objects.filter(user=user).delete()
+
+        return Response({'message': 'Password updated successfully.'}, status=200)

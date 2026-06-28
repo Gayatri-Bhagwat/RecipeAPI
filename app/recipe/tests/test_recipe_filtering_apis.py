@@ -147,19 +147,19 @@ class TestRecipeFilters(TestCase):
         self.client.force_authenticate(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(len(response.json()), 3)
         self.assertEqual(self.recipe.title.__contains__(search), True)
 
     def test_sort_filter_works_as_expected(self):
         """Test whether correct recipe data is returned for the applied sort filter """
         sort = "desc"
-        url = reverse("recipe:recipe-list", query={"sort": sort})
+        url = reverse("recipe:recipe-list", query={"sort_by": sort})
         self.client.force_authenticate(self.other_user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result_json = response.json()
-        self.assertEqual(len(result_json), 2)
-        self.assertTrue(result_json[0]['created_at'] > result_json[1]['created_at'])
+        self.assertEqual(len(result_json), 3)
+        self.assertTrue(result_json[0]['created_at'] > result_json[2]['created_at'])
 
     def test_prep_time_filter_works_as_expected(self):
         """Test whether correct recipe data is returned for the prep-time filter"""

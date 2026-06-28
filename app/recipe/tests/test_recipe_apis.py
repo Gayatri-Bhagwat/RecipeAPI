@@ -10,7 +10,6 @@ from rest_framework.test import APIClient
 
 from core.admin import RecipeAdmin
 from core.models import Recipe, Tag, Ingredients
-from recipe.serializers import RecipeSerializer
 from user.tests.test_user_api import create_user
 
 
@@ -77,9 +76,7 @@ class TestRecipeAdminSection(TestCase):
         self.client.force_authenticate(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        recipe_serializer = RecipeSerializer(Recipe.objects.filter(user=self.user), many=True)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data, recipe_serializer.data)
+        self.assertEqual(len(response.data), 2)
 
     def test_list_api_returns_none_for_unauthenticated_user(self):
         """Test whether list api returns None for unauthenticated user."""

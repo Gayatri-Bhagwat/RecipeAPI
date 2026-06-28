@@ -1,6 +1,5 @@
 """Serializer for recipe API."""
-
-
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from core.models import Recipe, Tag, Ingredients
@@ -31,6 +30,14 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class RecipeUserSerializer(serializers.ModelSerializer):
+    """Serializer for user model."""
+    class Meta:
+        model = get_user_model()
+        fields = ['name', 'email', 'headline']
+        read_only_fields = ['id']
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     """Serializers for Recipe model."""
 
@@ -42,10 +49,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredient = IngredientSerializer(many=True, required=False)
     #  make ingredient as optional part of recipe.
 
+    user = RecipeUserSerializer(read_only=True)
+
     class Meta:
         model = Recipe
         fields = ['id', 'title', 'description', 'time_minutes', 'price', 'link', 'likes', 'servings',
-                  'tag', 'ingredient', 'image', 'recipe_procedure', 'created_at']
+                  'tag', 'ingredient', 'image', 'recipe_procedure', 'created_at', 'user']
         read_only_fields = ['id']
 
     @staticmethod

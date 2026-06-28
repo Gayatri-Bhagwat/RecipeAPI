@@ -1,5 +1,4 @@
 """Views for recipe API's"""
-
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import viewsets, status, mixins
 from rest_framework.exceptions import ValidationError
@@ -56,7 +55,7 @@ class BaseRecipeAttrViewSet(
 
         if not search and not assigned_only:
             queryset = self.queryset
-        return queryset.filter(user=self.request.user).order_by('-name').distinct()
+        return queryset.order_by('-name').distinct()
 
 
 @extend_schema_view(
@@ -106,6 +105,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search", None)
         prep_time = self.request.query_params.get("prep_time", None)
         sort_by = self.request.query_params.get("sort_by", None)
+        active_user = self.request.query_params.get("active_user", "false") == "true"
         queryset = self.queryset
         tag_ids = []
         ingredient_ids = []
@@ -130,7 +130,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = self._filter_prep_time(prep_time, queryset)
         if sort_by:
             queryset = self._sort_queryset(sort_by, queryset)
-        return queryset.filter(user=self.request.user).distinct()
+        if active_user:
+            queryset = queryset.filter(user=self.request.user)
+        return queryset.distinct()
 
     @staticmethod
     def _sort_queryset(sort_by, queryset):

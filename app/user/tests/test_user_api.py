@@ -28,7 +28,13 @@ class PublicUserAPITest(TestCase):
             'password': 'testhost313!',
             'name': 'test_user2'
         }
+        self.other_user = {
+            'email': 'test3@example.com',
+            'password': 'qpalzm@12345',
+            'name': 'test_user3'
+        }
         self.user = create_user(**self.payload)
+        self.other_user = create_user(**self.other_user)
 
     def test_create_user_success(self):
         """Test creating user successful"""
@@ -109,3 +115,33 @@ class PublicUserAPITest(TestCase):
             'password': 'gettestuser231'
         })
         self.assertEqual(res.status_code, HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_password_is_updated_successfully(self):
+        """Test password is updated successfully"""
+        url = reverse('user:forgot-password', kwargs={'email': self.other_user.email})
+        response = self.client.post(url,  {
+            'current_password': 'qpalzm@12345',
+            'change_password': 'newTest@12345!',
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['message'], 'Password updated successfully.')
+
+    def test_current_password_incorrect_throws_bad_request(self):
+        """Test password incorrect throws bad request"""
+        url = reverse('user:forgot-password', kwargs={'email': self.user.email})
+        response = self.client.post(url, {
+            'current_password': 'qpalzm@12345',
+            'change_password': 'newTest@12345!',
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()['error'], 'Current password is incorrect.')
+
+    def test_user_not_found_but_attempting_forgot_password_returns_bad_request(self):
+        """Test user not found throws bad request"""
+        url = reverse('user:forgot-password', kwargs={'email': 'random@gmail.com'})
+        response = self.client.post(url, {
+            'current_password': 'qpalzm@12345',
+            'change_password': 'newTest@12345!',
+        })
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.json()['error'], 'No account found with this email.')
