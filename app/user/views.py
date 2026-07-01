@@ -156,3 +156,43 @@ class ForgotPasswordView(APIView):
         Token.objects.filter(user=user).delete()
 
         return Response({'message': 'Password updated successfully.'}, status=200)
+
+
+@extend_schema(
+    description="API endpoint to logout user.",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'refresh_token': {'type': 'string', 'description': 'Refresh token.'},
+            },
+            'required': ['refresh_token'],
+        }
+    },
+    responses={
+        205: OpenApiResponse(description='Logged out successfully.'),
+        400: {
+            OpenApiResponse(description='Invalid or expired refresh token.'),
+            OpenApiResponse(description='Refresh token is required'),
+        }
+    }
+)
+class LogOutView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @staticmethod
+    def post(request, *args, **kwargs):
+        """Log out user"""
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'refresh_token is required.'}, status=400)
+
+        try:
+            token = RefreshToken.objects.get(token=refresh_token)
+            token.delete()
+            return Response({'message': 'Logged out successfully.'}, status=205)
+        except RefreshToken.DoesNotExist:
+            return Response({'error': 'Invalid or expired refresh token.'}, status=400)
+        except Exception as e:
+            return Response({'error': f'An unexpected error occurred {e}'}, status=500)

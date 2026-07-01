@@ -1,5 +1,4 @@
 """Tests for user api"""
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -11,6 +10,7 @@ import json
 CREATE_USER_URL = reverse("user:create")
 TOKEN_URL = reverse("user:login")
 UPDATE_USER_URL = reverse("user:update")
+LOGOUT_URL = reverse("user:logout")
 
 
 def create_user(**params):
@@ -145,3 +145,27 @@ class PublicUserAPITest(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()['error'], 'No account found with this email.')
+
+    def test_user_logout_successfully(self):
+        """Test user logout successfully"""
+        login_response = self.client.post(TOKEN_URL, self.payload)
+        response = self.client.post(LOGOUT_URL, {
+            'refresh_token': login_response.json()['refresh_token'],
+        })
+        self.assertEqual(response.status_code, status.HTTP_205_RESET_CONTENT)
+
+    def test_bad_request_is_raised_when_no_refresh_token_provided(self):
+        """Test bad request with no refresh token"""
+        logout_response = self.client.post(LOGOUT_URL)
+        self.assertEqual(logout_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_bad_request_raised_when_expired_refresh_token_provided(self):
+        """Test bad request with expired refresh token"""
+        login_response = self.client.post(TOKEN_URL, self.payload)
+        self.client.post(LOGOUT_URL, {
+            'refresh_token': login_response.json()['refresh_token'],
+        })
+        logout_response = self.client.post(LOGOUT_URL, {
+            'refresh_token': login_response.json()['refresh_token'],
+        })
+        self.assertEqual(logout_response.status_code, status.HTTP_400_BAD_REQUEST)
